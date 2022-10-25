@@ -1,0 +1,16 @@
+#mainPagesDisplay
+    if pages 
+        - let pos = 1;
+        each page in pages
+            |#{pos}:  
+            b #{page.html.title} 
+            | (Popularity: #{page.incomingLinks.length}) 
+            if page.score 
+                |(Score: #{page.score})
+            br
+            a(href="/pages/" + page._id) #{page.url}
+            - pos++;
+            br
+            br
+    else 
+        |#{message}

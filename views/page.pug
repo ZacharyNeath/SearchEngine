@@ -1,0 +1,27 @@
+html
+    head
+        title #{title}
+        link(rel='stylesheet' href='../stylesheets/styles.css')
+body
+    include ./header.pug
+    |Information for webpage: 
+    a(href=page.url) #{page.url}
+    br
+    br
+    |Title: 
+    br
+    |#{page.html.title}
+    br
+    br
+    |Outgoing Links: 
+    br
+    each link in page.outgoingLinks 
+        a(href="/pages/" + link) #{link}
+        br
+    br
+    br
+    |Incoming Links:
+    br
+    each link in incomingLinks 
+        a(href="/pages/" + link._id) #{link.url}
+        br

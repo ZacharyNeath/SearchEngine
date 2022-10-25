@@ -1,0 +1,19 @@
+html
+    head
+        title #{title}
+        script(type="text/javascript" src="./javascripts/client.js")
+        link(rel='stylesheet' href='./stylesheets/styles.css')
+body
+    include ./header.pug
+
+    #searchBox 
+        label(for="search") Search: 
+        input#search(type="text")
+        br
+        br
+        button(type="button" onclick="submitSearch()") Search
+        br
+        br
+    br
+    #pageDisplay 
+        include ./pages-partial

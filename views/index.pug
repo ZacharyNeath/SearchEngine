@@ -1,0 +1,11 @@
+html
+    head
+        title #{title}
+        link(rel='stylesheet' href='./stylesheets/styles.css')
+body
+    include ./header.pug
+    
+    div#main
+        h1 Welcome To #{title}
+        h2 #{description}
+        iframe(width="850" height="540" src="https://www.youtube.com/embed/M7ghouZQRe4")
