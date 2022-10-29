@@ -148,7 +148,7 @@ function getSearchResults(req, res, page, endpoint){
                     ...p._doc, 
                     score : pageMap[p.url],
                     pageRank : p.pageRank,
-                    boostedScore: pageMap[p.url] * p.pageRank
+                    boostedScore : pageMap[p.url] * p.pageRank
                 });
                 comparison = compareBoostedScores;
             }

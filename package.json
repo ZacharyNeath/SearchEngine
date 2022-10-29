@@ -2,7 +2,7 @@
   "name": "lab3",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "main": "crawler.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node server.js"
@@ -17,6 +17,7 @@
     "ml-matrix": "^6.10.2",
     "mongodb": "^4.10.0",
     "mongoose": "^6.6.3",
+    "prompt-sync": "^4.2.0",
     "pug": "^3.0.2"
   }
 }
