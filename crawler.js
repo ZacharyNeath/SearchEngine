@@ -3,14 +3,18 @@ const mongo = require('mongodb');
 const mongoose = require('mongoose');
 
 const Page = require("./models/PageModel");
+const ranker = require("./ranker");
 let queued = {};
 
-const LIMIT = 10000;
+const LIMIT = 1000;
 let count = 0;
 
 const c = new Crawler({
     maxConnections : 10, //use this for parallel, rateLimit for individual
     //rateLimit: 1,
+    retries: 1,
+    retryTimeout: 1000,
+    
 
     // This will be called for each crawled page
     callback : async function (error, res, done) {
@@ -29,7 +33,7 @@ const c = new Crawler({
             done();
             return;
         }
-        else if(!res.headers["content-type"].includes("text/html")){
+        if(!res.headers["content-type"].includes("text/html")){
             console.log(res.headers["content-type"]);
             console.log(`URL: ${currentPage} \nDoes not return html \n\n`);
             delete queued[currentPage];
@@ -46,12 +50,10 @@ const c = new Crawler({
         let links = getReferences($);
         let validLinks = validateLinks(links, currentPage, currentDomain);
         logPage($, validLinks, currentPage);
-        validLinks = await select(validLinks);
-        registerLinks(validLinks);
-
-        if(count <= LIMIT){
-            c.queue(validLinks);
-        }
+        validLinks = await filter(validLinks);
+        validLinks = registerLinks(validLinks);
+        
+        c.queue(validLinks);
 
         //console.log("\n\n");
 
@@ -66,16 +68,19 @@ function getCurrentDomain(currentPage){
 
 function logPage($, links, currentPage){
     let l = [];
+    
     $("a").each(function(i, link){
         l.push($(link).text())
     });
+
+    let p = $("p").text()
+
     l = l.join(" ");
     let html = {
         title : $("title").text(),
         description : $("meta[name=Description]").attr("content"),
         keywords : $("meta[name=Keywords]").attr("content"),
-        body : $("body").text(),
-        paragraphs : $("p").text(),
+        paragraphs : p,
         links : l
     };
 
@@ -105,7 +110,7 @@ function validateLinks(links, currentPage, currentDomain){
     links = [... new Set(links)];
 
     for(let link of links){
-        if(link && link.split("#")[0] !== "" && link.split("mailto")[0] !== ""){
+        if(link && pathType(link) !== "#" && pathType(link) !== "mailto" && pathType(link) !== ":"){
             validLinks.push(buildProperPageLink(link, currentPage, currentDomain));
         }
     }
@@ -116,6 +121,7 @@ function validateLinks(links, currentPage, currentDomain){
 }
 
 function pathType(ref){
+    //
     if(ref.split(".")[0] === ""){
         return ".";
     }
@@ -125,21 +131,33 @@ function pathType(ref){
     else if(ref.split("#")[0] === ""){
         return "#";
     }
+    else if(ref.split(":")[0] === "javascript"){
+        return ":";
+    }
+    else if(ref.split("mailto")[0] !== ""){
+        return "mail";
+    }
     return undefined;
 }
 
 function registerLinks(links){
-    if(count >= LIMIT){
-        return;
-    }
+    let i = 0;
+
     for(let link of links){
+        if(count >= LIMIT){
+            break;
+        }
         queued[link] = 1;
         count++;
+        i++
     }
+
+    return links.slice(0, i);
 }
 
-async function select(links){
+async function filter(links){
     let results = await Page.find({url : {$in : links}});
+
     let validLinks = [];
     let removeIndexes = {};
 
@@ -164,35 +182,33 @@ async function select(links){
     return validLinks;
 }
 
-function logIncoming(){
-    Page.find({}, (err, pages) => {
-        if(err) throw err;
+async function logIncoming(){
+    let pages = await Page.find();
 
-        let pageMap = {};
-        for(let page of pages){
-            pageMap[page.url] = page;
-        }
+    let pageMap = {};
+    for(let page of pages){
+        pageMap[page.url] = page;
+    }
 
-        for(let page of pages){
-            for(let link of page.outgoingLinks){
-                if(pageMap[link]){
-                    if(!pageMap[link].incomingLinks){
-                        console.log("What");
-                    }
-                    pageMap[link].incomingLinks.push(page.url);
-                }
+    for(let page of pages){
+        for(let link of page.outgoingLinks){
+            if(pageMap[link]){
+                pageMap[link].incomingLinks.push(page.url);
             }
         }
-
-        for(const key of Object.keys(pageMap)){
-            try{
-                pageMap[key].save();
-            }
-            catch(err){
-                console.log(err.message);
-            }
+    }
+    const promises = [];
+    for(const key of Object.keys(pageMap)){
+        try{
+            const promise = pageMap[key].save();
+            promises.push(promise);
         }
-    });
+        catch(err){
+            console.log(err.message);
+        }
+    }
+
+    await Promise.all(promises);
 }
 
 function buildProperPageLink(link, currentPage, currentDomain){
@@ -214,13 +230,18 @@ function buildProperPageLink(link, currentPage, currentDomain){
 //Perhaps a useful event
 //Triggered when the queue becomes empty
 //There are some other events, check crawler docs
-c.on('drain',function(){
-    logIncoming();
+c.on('drain', async function(){
+    console.log("Logging now");
+    await logIncoming();
+    console.log("Done Logging");
+    console.log("Ranking");
+    await ranker.rankPages();
+    console.log("Done Ranking");
     console.log(count);
     console.log("Done.");
 });
 
-mongoose.connect('mongodb://localhost:27017/lab3', {useNewUrlParser: true});
+mongoose.connect('mongodb://localhost:27017/search', {useNewUrlParser: true});
 let db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function() {
@@ -239,6 +260,7 @@ db.once('open', function() {
 
         //Queue a URL, which starts the crawl
         c.queue(currentPage);
+        //c.queue("https://en.wikipedia.org/wiki/Scythe_(board_game)");
 	});
 });
 

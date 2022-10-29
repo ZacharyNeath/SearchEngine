@@ -15,7 +15,6 @@ let pageSchema = Schema({
             title : {type : String},
             description : {type: String},
             keywords : {type : [String]},
-            body : {type : String},
             paragraphs : {type : String},
             links : {type : String}
         },
@@ -28,6 +27,10 @@ let pageSchema = Schema({
     outgoingLinks : {
         type : [String],
         default : []
+    },
+    pageRank : {
+        type : Number,
+        default : 0
     }
 });
 

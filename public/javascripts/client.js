@@ -1,5 +1,10 @@
 function submitSearch(){
-    let search = document.getElementById("search").value;
+    let q = document.getElementById("search").value;
+    let boost = document.getElementById("boost").checked;
+    let limit = document.getElementById("limit").value;
+    let searchType = document.getElementById("pageType").value;
+    let search = searchType === "any" ? "search" : searchType;
+    if (!isSearchValid()) return;
 
     req = new XMLHttpRequest();
 	req.onreadystatechange = function() {
@@ -7,9 +12,12 @@ function submitSearch(){
 			pageHTML = req.responseText;
 			renderProducts(pageHTML);
 		}
+        else if(this.readyState==4 && this.status==400){
+            alert(req.responseText);
+        }
 	}
 					
-	req.open("GET", `http://localhost:3000/search?search=${search}&partial=1`);
+	req.open("GET", `http://localhost:3000/${search}?q=${q}&boost=${boost}&limit=${limit}&partial=1`);
 	req.send();
 }
 
@@ -26,4 +34,14 @@ function renderProducts(pageHTML){
     container.insertAdjacentHTML('beforeend', pageHTML);
 
     document.getElementById("pageDisplay").appendChild(container);  
+}
+
+function isSearchValid() {
+    const limit = document.getElementById("limit").value;
+    const isLimitValid = limit>0 && limit <= 50;
+    if (!isLimitValid) {
+        alert("Limit is invalid");
+    }
+
+    return isLimitValid;
 }

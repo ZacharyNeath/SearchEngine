@@ -1,0 +1,23 @@
+#mainPagesDisplay
+    if pages 
+        - let pos = 1;
+        each page in pages
+            |#{pos}:  
+            b #{page.html.title} 
+            | (Popularity: #{page.incomingLinks.length}) 
+            if page.score 
+                |(Score: #{page.score}) 
+            if page.pageRank 
+                |(PageRank: #{page.pageRank}) 
+            if page.boostedScore 
+                |(Boosted Score: #{page.boostedScore})
+            br
+            a(href=page.url target="_blank") #{page.url}
+            |
+            |
+            a(href="/pages/" + page._id target="_blank") Details
+            - pos++;
+            br
+            br
+    else 
+        |Sorry nothing matched your search criteria

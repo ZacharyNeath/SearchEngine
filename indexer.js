@@ -21,8 +21,8 @@ async function createIndex(){
         let doc = {
             url : page.url,
             title : page.html.title,
-            body : page.html.body.split("\n\n")[0],
-            links : page.html.body.split("\n\n")[1],
+            body : page.html.paragraphs,
+            links : page.html.links,
         }
         index.addDoc(doc);
     }

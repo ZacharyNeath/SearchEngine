@@ -15,8 +15,8 @@ body
     br
     |Outgoing Links: 
     br
-    each link in page.outgoingLinks 
-        a(href="/pages/" + link) #{link}
+    each link in outgoingLinks 
+        a(href="/pages/" + link._id) #{link.url}
         br
     br
     br

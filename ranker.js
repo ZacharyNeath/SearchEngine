@@ -3,45 +3,44 @@ const { Matrix } = require('ml-matrix');
 
 const Page = require("./models/PageModel");
 
-const url = 'mongodb://localhost:27017/lab3';
+const url = 'mongodb://localhost:27017/search';
 const alpha = 0.1;
 
-main();
+module.exports = {
+    rankPages
+}
+
+//main();
 
 async function main(){
+    let results = rankPages();
+    let ranks = getTopPageRanks(results.ranks, results.positions);
+    displayTopNRanks(ranks, 25);
+    console.log("Done ranking");
+}
+
+async function rankPages(){
     await mongoose.connect(url);
 
     let pages = await Page.find();
     pages.sort(compare);
     let positions = buildPositions(pages);
+    cleanOutgoingLinks(pages, positions);
 
     let A = Matrix.zeros(pages.length, pages.length);
     setOutgoing(A, pages, positions);
-    console.log("Set outgoing");
-    console.log(A);
     addMoveProbability(A, pages, positions);
-    console.log("Add move prob");
-    console.log(A);
     A.mul(1-alpha);
-    console.log("Multiply by 1-alpha");
-    console.log(A);
 
     let alphaMatrix = new Matrix(Array(pages.length).fill(Array(pages.length).fill(1/pages.length)));
-    console.log("Fill aplha matrix");
-    console.log(alphaMatrix);
     alphaMatrix.mul(alpha);
-    console.log("Multiply alpha matrix");
-    console.log(alphaMatrix);
     
     let result = Matrix.add(A, alphaMatrix);
-    console.log("Added two matrices");
-    console.log(result);
     let x = powerIteration(result);
-    console.log("Power iteration");
-    console.log(x);
 
-    let ranks = getTopPageRanks(x, positions);
-    displayTopNRanks(ranks, 25);
+    pages = await Page.find();
+    await updatePageRanks(pages, x, positions);
+    return {ranks : x, positions};
 }
 
 function buildPositions(pages){
@@ -56,10 +55,27 @@ function buildPositions(pages){
     return positions;
 }
 
+function cleanOutgoingLinks(pages, positions){
+    for(let page of pages){
+        let validLinks = [];
+
+        for(let outgoing of page.outgoingLinks){
+            if(positions[outgoing] !== undefined){
+                validLinks.push(outgoing);
+            }
+            else{
+                let x;
+            }
+        }
+
+        page.outgoingLinks = validLinks;
+    }
+}
+
 function setOutgoing(ranks, pages, positions){
     for(let i = 0; i < pages.length; i++){
         for(let outgoing of pages[i].outgoingLinks){
-            ranks.set(i, positions[outgoing], 1)
+            ranks.set(positions[pages[i].url], positions[outgoing], 1)
         }
     }
 }
@@ -67,11 +83,11 @@ function setOutgoing(ranks, pages, positions){
 function addMoveProbability(ranks, pages, positions){
     for(let i = 0; i < pages.length; i++){
         if(pages[i].outgoingLinks.length === 0){
-            ranks.setRow(i, Array(pages.length).fill(1/(pages.length)));
-            break;
+            ranks.setRow(positions[pages[i].url], Array(pages.length).fill(1/(pages.length)));
+            continue;
         }
         for(let outgoing of pages[i].outgoingLinks){
-            ranks.set(i, positions[outgoing], (ranks.get(i, positions[outgoing])/pages[i].outgoingLinks.length))
+            ranks.set(positions[pages[i].url], positions[outgoing], (ranks.get(i, positions[outgoing])/pages[i].outgoingLinks.length))
         }
     }
 }
@@ -117,6 +133,22 @@ function displayTopNRanks(ranks, n){
     for(let i = 0; i < n; i++){
         console.log(`#${i+1}. (${ranks[i].rank}) ${ranks[i].url}`);
     }
+}
+
+async function updatePageRanks(pages, ranks, positions){
+    let promises = [];
+
+    for(let page of pages){
+        page.pageRank = ranks.get(0, positions[page.url]);
+        try{
+            promises.push(page.save());
+        }
+        catch(err){
+            console.log(err.message)
+        }
+    }
+
+    await Promise.all(promises);
 }
 
 function compare(a, b){

@@ -5,15 +5,34 @@ html
         link(rel='stylesheet' href='./stylesheets/styles.css')
 body
     include ./header.pug
+    
+    #pageSelectBox
+        label(for="pageType") Search For: 
+        select#pageType
+            option(value="any") Any
+            option(value="fruits") Fruits
+            option(value="personal") Personal
+    br
+
+    #limitBox
+        label(for="limit") Limit: 
+        input#limit(type="number" min="1" max="50" value="10")
+    br
+
+    #boostBox
+        label(for="boost") Boost pagerank: 
+        input#boost(type="checkbox" checked)
+    br
 
     #searchBox 
         label(for="search") Search: 
-        input#search(type="text")
+        input#search(type="text" oninput="submitSearch()")
         br
         br
         button(type="button" onclick="submitSearch()") Search
         br
         br
     br
+    
     #pageDisplay 
-        include ./pages-partial
+        include ./results
