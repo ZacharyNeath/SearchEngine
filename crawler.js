@@ -15,7 +15,6 @@ let futureBatchPages = [];
 let done = false;
 let first = true;
 let batchCount = 0;
-let visitedCount = 0;
 
 const c = new Crawler({
     maxConnections : 10, //use this for parallel, rateLimit for individual
@@ -94,8 +93,6 @@ function logPage($, links, currentPage){
         links : l,
     };
 
-    visitedCount++;
-    //console.log(visitedCount);
     let page = new Page({url : currentPage, html, visited : v, outgoingLinks : links, incomingLinks : []});
     visited.push(page);
 }

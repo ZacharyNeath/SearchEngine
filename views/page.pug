@@ -25,3 +25,10 @@ body
     each link in incomingLinks 
         a(href="/pages/" + link._id) #{link.url}
         br
+    br
+    br
+    |Word Frequency:
+    br
+    each word in wordFrequency
+        |#{word.word}: #{word.count}
+        br
