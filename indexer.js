@@ -10,11 +10,13 @@ const index = elasticlunr(function () {
     this.addField('links');
 });
 
+//Create exports to use in other classes
 module.exports = {
     createIndex,
     search
 }
 
+//Creates index for page objects
 async function createIndex(){
     let pages = await Page.find();
     for(let page of pages){
@@ -28,6 +30,7 @@ async function createIndex(){
     }
 }
 
+//Searches for pages that match criteria text and fields
 function search(criteria){
     let results = index.search(criteria.text, {...criteria.fields});
     return results;
