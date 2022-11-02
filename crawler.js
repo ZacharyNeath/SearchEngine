@@ -27,6 +27,7 @@ const c = new Crawler({
         if(error){
             console.log(error);
             done();
+            return;
         }
 
         let currentPage = res.options.uri;
@@ -321,6 +322,7 @@ c.on('drain', async function(){
         c.queue(page);
         return;
     }
+
     console.log("Batch is done. Enter q to end crawling. Enter anything else to continue:");
     done = prompt() === "q";
 
