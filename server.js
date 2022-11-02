@@ -137,11 +137,9 @@ function getSearchResults(req, res, page, endpoint){
         if(endpoint === "fruits"){
             return result.ref.startsWith("https://people.scs.carleton.ca/~davidmckenney/fruitgraph");
         }
-
         else if(endpoint === "personal"){
             return !result.ref.startsWith("https://people.scs.carleton.ca/~davidmckenney/fruitgraph");
         }
-
         else{
             return true;
         }
